@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "notebooklm-tools": {
+      "command": "mcp",
+      "args": [
+        "run",
+        "main.py"
+      ]
+    }
+  }
+}
