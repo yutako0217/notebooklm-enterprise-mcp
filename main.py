@@ -9,6 +9,8 @@ from tools.notebooks.batch_delete import batch_delete_notebooks
 from tools.notebooks.share import share_notebook
 from tools.sources.add_text_source import add_text_source_to_notebook
 from tools.sources.batch_delete import batch_delete_sources_from_notebook
+from tools.sources.upload_file import upload_file
+from tools.sources.get_details import get_source_details
 
 # Load environment variables from .env file
 load_dotenv()
@@ -26,6 +28,8 @@ mcp.add_tool(batch_delete_notebooks)
 mcp.add_tool(share_notebook)
 mcp.add_tool(add_text_source_to_notebook)
 mcp.add_tool(batch_delete_sources_from_notebook)
+mcp.add_tool(upload_file)
+mcp.add_tool(get_source_details)
 
 
 if __name__ == "__main__":

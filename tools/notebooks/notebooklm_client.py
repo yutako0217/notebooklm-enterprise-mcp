@@ -1,13 +1,14 @@
 import httpx
 import google.auth
 import google.auth.transport.requests
+import mimetypes
 from functools import lru_cache
 
 from services.gcp import get_gcp_settings
 
 
-@lru_cache(maxsize=1)
-def get_base_api_url() -> str:
+@lru_cache(maxsize=2)
+def get_base_api_url(upload: bool = False) -> str:
     """Constructs the base URL for the NotebookLM API using GCP settings.
 
     The URL is cached to avoid repeated calls to retrieve GCP settings.
@@ -17,7 +18,10 @@ def get_base_api_url() -> str:
     """
     gcp_settings = get_gcp_settings()
     location = gcp_settings["location"]
-    base_url = f"https://{location}-discoveryengine.googleapis.com/v1alpha"
+    if upload:
+        base_url = f"https://{location}-discoveryengine.googleapis.com/upload/v1alpha"
+    else:
+        base_url = f"https://{location}-discoveryengine.googleapis.com/v1alpha"
     print(f"Using base URL: {base_url}")
     return base_url
 
@@ -66,7 +70,7 @@ def make_api_request(method: str, endpoint: str, payload: dict | None = None) ->
             "Content-Type": "application/json",
         }
 
-        base_url = get_base_api_url()
+        base_url = get_base_api_url(upload=False)
         url = f"{base_url}{endpoint}"
 
         with httpx.Client(timeout=30.0) as client:
@@ -80,6 +84,53 @@ def make_api_request(method: str, endpoint: str, payload: dict | None = None) ->
 
     except httpx.HTTPStatusError as e:
         # Forward the error response from the downstream API
+        raise Exception(
+            f"Error from NotebookLM API ({e.response.status_code}): {e.response.text}"
+        )
+    except Exception as e:
+        raise Exception(f"An unexpected error occurred: {e}")
+
+
+def make_api_request_with_file_upload(
+    endpoint: str, file_path: str, display_name: str
+) -> dict:
+    """Makes a file upload request to the NotebookLM API using raw upload.
+
+    Args:
+        endpoint: The API endpoint path.
+        file_path: The path to the file to upload.
+        display_name: The display name for the file.
+
+    Returns:
+        The JSON response from the API as a dictionary.
+
+    Raises:
+        Exception: For API errors or unexpected issues.
+    """
+    try:
+        token = get_auth_token()
+        content_type, _ = mimetypes.guess_type(file_path)
+        if content_type is None:
+            content_type = "application/octet-stream"
+
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-Goog-Upload-File-Name": display_name,
+            "X-Goog-Upload-Protocol": "raw",
+            "Content-Type": content_type,
+        }
+
+        base_url = get_base_api_url(upload=True)
+        url = f"{base_url}{endpoint}"
+
+        with open(file_path, "rb") as f:
+            file_content = f.read()
+            with httpx.Client(timeout=30.0) as client:
+                response = client.post(url, content=file_content, headers=headers)
+                response.raise_for_status()
+                return response.json()
+
+    except httpx.HTTPStatusError as e:
         raise Exception(
             f"Error from NotebookLM API ({e.response.status_code}): {e.response.text}"
         )
