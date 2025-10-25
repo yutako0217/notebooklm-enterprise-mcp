@@ -105,4 +105,6 @@ This server provides the following tools to interact with the NotebookLM API.
 ### Source Management
 
 - **`add_text_source_to_notebook(notebook_id: str, source_name: str, content: str)`**: Adds a new text-based data source to a notebook.
+- **`upload_file(notebook_id: str, file_path: str, display_name: str)`**: Uploads a file to a notebook.
+- **`get_source_details(notebook_id: str, source_id: str)`**: Gets the details of a source from a notebook.
 - **`batch_delete_sources_from_notebook(notebook_id: str, source_ids: list[str])`**: Deletes one or more data sources from a notebook.
